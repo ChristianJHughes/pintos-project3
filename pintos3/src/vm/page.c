@@ -10,6 +10,7 @@
 #include "threads/vaddr.h"
 
 /* Maximum size of process stack, in bytes. */
+/* Right now it is 1 megabyte. */
 #define STACK_MAX (1024 * 1024)
 
 /* Destroys a page, which must be in the current process's
@@ -37,7 +38,7 @@ page_exit (void)
    or a null pointer if no such page exists.
    Allocates stack pages as necessary. */
 static struct page *
-page_for_addr (const void *address) 
+page_for_addr (const void *address)
 {
   if (address < PHYS_BASE)
     {
@@ -50,17 +51,19 @@ page_for_addr (const void *address)
       if (e != NULL)
         return hash_entry (e, struct page, hash_elem);
 
-      /* No page.  Expand stack? */
-
-/* add code */
-
-// Need to determine if the program is attempting to access the stack.
-// Create new page
-// Grow the stack
-// Add page to page table
-// Return that page
-
+      /* -We need to determine if the program is attempting to access the stack.
+         -First, we ensure that the address is not beyond the bounds of the stack space (1 MB in this
+          case).
+         -As long as the user is attempting to acsess an address within 32 bytes (determined by the space
+          needed for a PUSHA command) of the stack pointers, we assume that the address is valid. In that
+          case, we should allocate one more stack page accordingly.
+      */
+      if ((p.addr > PHYS_BASE - STACK_MAX) && ((void *)thread_current()->user_esp - 32 < address))
+      {
+        return page_allocate (p.addr, false);
+      }
     }
+
   return NULL;
 }
 
