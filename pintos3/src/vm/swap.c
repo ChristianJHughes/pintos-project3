@@ -21,10 +21,10 @@ static struct lock swap_lock;
 
 /* Sets up swap. */
 void
-swap_init (void) 
+swap_init (void)
 {
   swap_device = block_get_role (BLOCK_SWAP);
-  if (swap_device == NULL) 
+  if (swap_device == NULL)
     {
       printf ("no swap device--swap disabled\n");
       swap_bitmap = bitmap_create (0);
@@ -40,10 +40,10 @@ swap_init (void)
 /* Swaps in page P, which must have a locked frame
    (and be swapped out). */
 void
-swap_in (struct page *p) 
+swap_in (struct page *p)
 {
   size_t i;
-  
+
   ASSERT (p->frame != NULL);
   ASSERT (lock_held_by_current_thread (&p->frame->lock));
   ASSERT (p->sector != (block_sector_t) -1);
@@ -57,7 +57,7 @@ swap_in (struct page *p)
 
 /* Swaps out page P, which must have a locked frame. */
 bool
-swap_out (struct page *p) 
+swap_out (struct page *p)
 {
   size_t slot;
   size_t i;
@@ -68,14 +68,20 @@ swap_out (struct page *p)
   lock_acquire (&swap_lock);
   slot = bitmap_scan_and_flip (swap_bitmap, 0, 1, false);
   lock_release (&swap_lock);
-  if (slot == BITMAP_ERROR) 
-    return false; 
+  if (slot == BITMAP_ERROR)
+    return false;
 
   p->sector = slot * PAGE_SECTORS;
 
   // Write out page sectors
-/* add code here */ 
- 
+  /* add code here */
+
+  for (i = 0; i < PAGE_SECTORS; i++)
+  {
+    block_write (swap_device, p->sector + i,
+                 (uint8_t *) p->frame->base + i * BLOCK_SECTOR_SIZE);
+  }
+
   p->private = false;
   p->file = NULL;
   p->file_offset = 0;
