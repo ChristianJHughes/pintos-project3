@@ -159,19 +159,37 @@ page_out (struct page *p)
   pagedir_clear_page(p->thread->pagedir, (void *) p->addr);
 
   /* Has the frame been modified? */
-  bool isDirty = pagedir_is_dirty (p->thread->pagedir, (const void *) p->addr);
+  dirty = pagedir_is_dirty (p->thread->pagedir, (const void *) p->addr);
   // Check dirty bit. If so, write out to disk.
 
-/* add code here */
+  if(!dirty)
+  {
+    ok = true;
+  }
 
-  /* Write frame contents to disk if necessary. */
-  if (isDirty)
+  if(p->file == NULL)
   {
     ok = swap_out(p);
   }
+  else
+  {
+    if (dirty)
+    {
+      if(p->private)
+      {
+        ok = swap_out(p);
+      }
+      else
+      {
+        ok = file_write_at(p->file, (const void *) p->frame->base, p->file_bytes, p->file_offset);
+      }
+    }
+  }
 
-  /* add code here */
-
+  if(ok)
+  {
+    p->frame = NULL;
+  }
   return ok;
 }
 
